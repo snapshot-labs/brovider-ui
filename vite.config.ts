@@ -1,7 +1,6 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import GlobalPolyFill from '@esbuild-plugins/node-globals-polyfill';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import Icons from 'unplugin-icons/vite';
@@ -51,21 +50,10 @@ export default defineConfig({
       }
     })
   ],
-  optimizeDeps: {
-    include: ['@snapshot-labs/sx'],
-    esbuildOptions: {
-      target,
-      plugins: [
-        GlobalPolyFill({
-          buffer: true
-        })
-      ]
-    }
-  },
   build: {
     target,
     commonjsOptions: {
-      include: [/sx.js/, /node_modules/],
+      include: [/node_modules/],
       transformMixedEsModules: true
     },
     rollupOptions: {
@@ -79,12 +67,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // polyfills
-      stream: path.resolve(__dirname, 'node_modules/stream-browserify'),
-      events: path.resolve(__dirname, 'node_modules/events'),
-      util: path.resolve(__dirname, 'node_modules/util'),
-      buffer: path.resolve(__dirname, 'node_modules/buffer')
-    },
-    dedupe: ['@popperjs/core']
+    }
   }
 });
