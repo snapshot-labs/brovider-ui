@@ -16,10 +16,7 @@ module.exports = {
         'skin-block-bg': 'var(--block-bg)',
         'skin-active': 'var(--active-bg)',
         'skin-hover': 'var(--hover-bg)',
-        'skin-heading': 'var(--heading-color)',
-        blue: '#384aff',
-        green: '#21b66f',
-        red: '#ff3856'
+        'skin-heading': 'var(--heading-color)'
       },
       animation: {
         'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
