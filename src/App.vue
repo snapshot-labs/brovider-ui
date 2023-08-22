@@ -1,3 +1,3 @@
 <template>
-  <router-view />
+  <router-view data-color-scheme="light" />
 </template>

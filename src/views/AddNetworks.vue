@@ -53,7 +53,7 @@ async function addNewNodes() {
       <li
         v-for="(item, index) in items"
         :key="index"
-        class="flex items-center justify-between mb-2"
+        class="flex items-stretch justify-between mb-2"
       >
         <div class="flex grow shadow mr-2 border-gray-200 sm:rounded-lg">
           <div class="p-2 flex w-[45%] border-r">
@@ -70,14 +70,14 @@ async function addNewNodes() {
           </div>
         </div>
         <button
-          class="rounded-full text-gray-600 w-10 h-10 flex items-center justify-center shadow border-gray-200 sm:rounded-lg"
+          class="rounded-full text-gray-600 w-10 h-10 min-w-[2.5rem] flex items-center justify-center shadow border-gray-200 sm:rounded-lg"
           @click="removeItem(index)"
         >
           <IH-minus-circle class="w-[60%] h-[60%]" />
         </button>
       </li>
     </ul>
-    <div class="flex items-center justify-between mb-2">
+    <div class="flex items-stratch justify-between mb-2">
       <div class="flex grow shadow mr-2 border-gray-200 sm:rounded-lg">
         <input v-model="newItem.url" placeholder="URL" class="border w-[45%] p-2 mr-2" required />
         <input v-model="newItem.provider" placeholder="Provider" class="border p-2 w-[30%] mr-2" />
