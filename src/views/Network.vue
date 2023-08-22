@@ -118,9 +118,11 @@ function viewNodeDetails(node) {
         Add node
       </router-link>
     </div>
-    <div class="flex flex-col mt-2">
-      <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-        <table class="min-w-full divide-y divide-gray-200">
+    <div class="flex flex-col mt-2 justify-center">
+      <div
+        class="shshadow overflow-x-auto max-w-screen-md w-full border-b border-gray-200 sm:rounded-lg mx-auto"
+      >
+        <table class="w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
               <th
@@ -137,7 +139,7 @@ function viewNodeDetails(node) {
                 :key="index"
                 scope="col"
                 :class="param.classes"
-                class="px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                class="p-2 text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 {{ param.label }}
               </th>
@@ -148,7 +150,7 @@ function viewNodeDetails(node) {
               <td
                 v-for="(param, cellIndex) in nodeParams"
                 :key="cellIndex"
-                class="py-2 px-6"
+                class="p-2"
                 :class="param.classes"
               >
                 <component

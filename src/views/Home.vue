@@ -6,7 +6,7 @@ onMounted(fetchNodes);
 
 <template>
   <div class="flex font-sans bg-white">
-    <div class="relative inline-block text-left w-60 shadow-md overflow-y-scroll h-screen">
+    <div class="flex-none w-[250px] text-left shadow-md overflow-y-scroll overflow-x-auto h-screen">
       <div class="sticky top-0 z-10 bg-white">
         <div class="py-5 flex justify-center border-b">
           <router-link to="/">
@@ -45,7 +45,7 @@ onMounted(fetchNodes);
         </li>
       </ul>
     </div>
-    <div class="flex-auto p-4">
+    <div class="flex-grow p-4 w-min-[250px]">
       <router-view />
     </div>
   </div>
