@@ -4,15 +4,15 @@ import NodeActionsDropdown from '@/components/NodeActionsDropdown.vue';
 const { nodesForNetwork, deleteNode, fetchNodes, editNode } = useFetchNodes();
 
 const route = useRoute();
-const network = route.params.id;
-const networkName = computed(() => getNetworkName(network));
+const network = computed(() => route.params.id);
+const networkName = computed(() => getNetworkName(network.value));
 const isRemoveModalOpen = ref(false);
 const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
 const lastInteractedNode = ref(null);
 
 const nodes = computed(() => {
-  return nodesForNetwork(network) || [];
+  return nodesForNetwork(network.value) || [];
 });
 
 const nodeParams = [
