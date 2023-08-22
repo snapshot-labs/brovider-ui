@@ -94,7 +94,7 @@ function viewNodeDetails(node) {
   <div class="mt-4 p-2 bg-white">
     <div class="flex items-center justify-between mb-4">
       <div class="flex-1 flex min-w-0">
-        <NetworkLogo :network="network" />
+        <NetworkLogo :network="network" class="mr-2" />
         <div class="mt-1">
           <h2 class="text-3xl">
             {{ networkName }}
