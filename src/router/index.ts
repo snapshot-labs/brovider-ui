@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router";
-import NetworkTester from "/src/components/NetworkTester.vue";
-import SelectNetworkMessage from "/src/components/SelectNetworkMessage.vue";
+import { createRouter, createWebHashHistory } from "vue-router";
+import NetworkTester from "../components/NetworkTester.vue";
+import SelectNetworkMessage from "../components/SelectNetworkMessage.vue";
 
 const routes = [
   {
@@ -17,7 +17,7 @@ const routes = [
   },
 ];
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 

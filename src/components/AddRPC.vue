@@ -1,50 +1,68 @@
+<script setup lang="ts">
+import { useApp } from "../composables/useApp";
+import { useToast } from "../composables/useToast";
+
+const { app, selectNetwork } = useApp();
+const toast = useToast();
+
+function addRpc() {
+  app.value.networks[app.value.selectedNetwork.key].rpc.push(
+    app.value.selectedNetwork.newRPC
+  );
+  selectNetwork(app.value.selectedNetwork.key);
+  toast.success("RPC endpoint added");
+}
+</script>
+
 <template>
   <tr>
     <td
-      colspan="4"
-      class="p-4 border-b-1 border-gray-600 cursor-pointer"
+      colspan="5"
+      class="p-4 border-t border-skin-border/30 cursor-pointer group"
       v-if="!app.selectedNetwork.addRPCInput"
       @click="app.selectedNetwork.addRPCInput = true"
     >
-      <img
-        class="inline pr-2"
-        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAABbUlEQVRIid2UTU7DMBCFP1I1G8oVOEDhDpQFLFGpUK9QUSF+LoEqzgArfg6D2FAQlAJbOEBY0AUNixkTq9hx3GWfNHLimXnPmcwYFh0p0AVugBHwpTYCrtWXzkveAd6BPGBvwG4McQKcWQT3wCHQBJbV1oAjYGjFDTQ3CEP+DfQCSQmwr7FGpBQdi3yjymkULUuk7QtKKWre88SYcrjQV98rUHcFdClq7itLmUANeFD/ntm0iUwnnANTD0kZfoALfXaW6UXVmyUkZV8A0l05Mif/kKmz4SAMmcGKvmdmo1LfRmBJ178S2wIfuq7OJNgW2je5ny6BO123Ik9tY1vXW5fTtOmQ+dv0kZk2tZEiF1eOjH+swIH6xngGDWQWzFXR8gU5sAlMkJ+7EwoeWCJ95NN9qCEnn2jOaZXTJJZIjoz/MTJEDbV14ISi5lMlj2r7NnJxhYZsTIWy+FBHOuIKeEYmNAOegEv1eX/oYuAXIGV8V8ESsxoAAAAASUVORK5CYII="
-      />
-      Add RPC
+      <div
+        class="flex items-center gap-2 text-skin-text group-hover:text-skin-heading transition-colors duration-200"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        <span class="text-sm font-medium">Add RPC endpoint</span>
+      </div>
     </td>
     <td
-      colspan="4"
-      class="p-4 border-b-1 border-gray-600"
+      colspan="5"
+      class="p-4 border-t border-skin-border/30"
       v-if="app.selectedNetwork.addRPCInput"
     >
-      <input
-        type="text"
-        class="form-control p-3 my-3 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-        v-model="app.selectedNetwork.newRPC"
-        placeholder="Enter RPC URL"
-      />
-      <button
-        @click="
-          app.networks[app.selectedNetwork.key].rpc.push(
-            app.selectedNetwork.newRPC
-          );
-          selectNetwork(app.selectedNetwork.key);
-        "
-        class="items-center px-4 py-2 mx-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-      >
-        Add
-      </button>
-      <button
-        @click="app.selectedNetwork.addRPCInput = false"
-        class="items-center px-4 py-2 mx-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-      >
-        Cancel
-      </button>
+      <div class="flex items-center gap-3">
+        <input
+          type="text"
+          class="flex-1 px-4 py-2.5 bg-skin-bg border border-skin-border rounded-xl text-sm text-skin-heading focus:outline-none focus:ring-1 focus:ring-skin-heading/30 focus:border-skin-text transition-all duration-200"
+          v-model="app.selectedNetwork.newRPC"
+          placeholder="https://rpc.example.com"
+        />
+        <button @click="addRpc()" class="btn-primary whitespace-nowrap">
+          Add
+        </button>
+        <button
+          @click="app.selectedNetwork.addRPCInput = false"
+          class="btn-secondary whitespace-nowrap"
+        >
+          Cancel
+        </button>
+      </div>
     </td>
   </tr>
 </template>
-
-<script setup>
-import { useApp } from "../composables/useApp";
-const { app, selectNetwork } = useApp();
-</script>
