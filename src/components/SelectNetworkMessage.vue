@@ -86,10 +86,18 @@ async function resolveRpc() {
       <h3 class="text-xl sm:text-2xl font-semibold text-skin-heading mb-2">
         Select a network
       </h3>
-      <p class="text-skin-text text-sm mb-6">
+      <p class="text-skin-text text-sm mb-4">
         Choose a network from the sidebar to view its RPC nodes and performance
         metrics.
       </p>
+      <div class="flex items-center justify-center gap-3 mb-6">
+        <span class="text-xs text-skin-text/60">Press</span>
+        <kbd
+          class="inline-flex items-center px-2 py-1 text-xs font-medium text-skin-text bg-skin-bg rounded-lg border border-skin-border"
+          >/</kbd
+        >
+        <span class="text-xs text-skin-text/60">to search networks</span>
+      </div>
 
       <!-- RPC URL input form -->
       <div class="border-t border-skin-border/50 pt-6">

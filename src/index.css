@@ -44,7 +44,7 @@
     @apply bg-skin-bg-alt border border-skin-border rounded-2xl;
   }
   .btn-primary {
-    @apply px-4 py-2 bg-skin-primary font-medium rounded-xl transition-all duration-200 ease-out;
+    @apply px-4 py-2 bg-skin-primary font-medium rounded-xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-skin-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-skin-bg;
     color: rgb(17, 17, 17);
   }
   .btn-primary:hover {
@@ -54,7 +54,7 @@
     transform: scale(0.97);
   }
   .btn-secondary {
-    @apply px-4 py-2 bg-skin-bg-alt border border-skin-border font-medium rounded-xl transition-all duration-200 ease-out;
+    @apply px-4 py-2 bg-skin-bg-alt border border-skin-border font-medium rounded-xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-skin-border focus-visible:ring-offset-2 focus-visible:ring-offset-skin-bg;
     color: rgb(255, 255, 255);
   }
   .btn-secondary:hover {

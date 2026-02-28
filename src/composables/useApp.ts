@@ -387,18 +387,18 @@ export function useApp() {
     ]);
 
     const snapshotMap: Record<string, SnapshotNetwork> = {};
-    mainnetData.forEach((n: any) => {
-      snapshotMap[n.id] = n;
-    });
-    testnetData.forEach((n: any) => {
-      if (!snapshotMap[n.id]) {
-        snapshotMap[n.id] = n;
+    for (const network of mainnetData) {
+      snapshotMap[network.id] = network;
+    }
+    for (const network of testnetData) {
+      if (!snapshotMap[network.id]) {
+        snapshotMap[network.id] = network;
       }
-    });
+    }
     state.snapshotNetworks = snapshotMap;
     state.areSnapshotNetworksLoaded = true;
 
-    Object.keys(networksObj).forEach((key) => {
+    for (const key of Object.keys(networksObj)) {
       if (!networksObj[key])
         networksObj[key] = {
           key,
@@ -414,7 +414,7 @@ export function useApp() {
           start: 0,
           logo: "",
         };
-    });
+    }
     state.networks = networksObj;
   }
 

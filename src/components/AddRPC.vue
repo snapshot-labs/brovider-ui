@@ -19,8 +19,10 @@ function addRpc() {
     <td
       colspan="5"
       class="p-4 border-t border-skin-border/30 cursor-pointer group"
+      tabindex="0"
       v-if="!app.selectedNetwork.addRPCInput"
       @click="app.selectedNetwork.addRPCInput = true"
+      @keydown.enter="app.selectedNetwork.addRPCInput = true"
     >
       <div
         class="flex items-center gap-2 text-skin-text group-hover:text-skin-heading transition-colors duration-200"

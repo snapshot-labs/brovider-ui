@@ -34,13 +34,17 @@ const snapshotInfo = computed(() => {
   return app.value.snapshotNetworks[key] || null;
 });
 
-const hasIdleRpcs = computed(() =>
-  app.value.selectedNetwork?.rpcStatus?.some((rpc) => rpc.status.isIdle)
-);
-
-function explorerBlockUrl(block: number | string) {
+function explorerBlockUrl(block: number | string): string | null {
   const base = app.value.selectedNetwork?.explorer?.url;
-  if (!base || !block || block === "ERROR!" || block === "...") return "#";
+  if (
+    !base ||
+    !block ||
+    block === "ERROR!" ||
+    block === "NOT WORKING" ||
+    block === "..." ||
+    block === "-"
+  )
+    return null;
   return `${base}/block/${block}`;
 }
 
@@ -54,16 +58,41 @@ function isNodeLimitChecking(nodeLimit: string) {
   return typeof nodeLimit === "string" && nodeLimit.startsWith("checking");
 }
 
+function formatBlock(block: number | string) {
+  if (typeof block === "number") return block.toLocaleString();
+  return block;
+}
+
+function multicallColorClass(multicall: string) {
+  if (multicall === "ERROR!") return "text-skin-error";
+  const ms = parseFloat(multicall);
+  if (isNaN(ms)) return "text-skin-heading";
+  if (ms < 200) return "text-skin-success";
+  if (ms < 500) return "text-skin-warning";
+  return "text-skin-error";
+}
+
+function isNotWorking(status: any) {
+  return status?.latestBlockNumber === "NOT WORKING";
+}
+
 function copyUrl(url: string | { url: string }) {
-  const text = typeof url === "object" ? url.url : url;
-  copy(text);
+  copy(getRpcUrl(url));
   toast.success("RPC URL copied");
 }
 
+function getRpcUrl(url: string | { url: string }) {
+  return typeof url === "object" ? url.url : url;
+}
+
 function removeRpc(url: string | { url: string }) {
+  const urlStr = getRpcUrl(url);
   app.value.networks[app.value.selectedNetwork.key].rpc = app.value.networks[
     app.value.selectedNetwork.key
-  ].rpc.filter((a: string) => a !== url);
+  ].rpc.filter(
+    (a: string | { url: string }) =>
+      (typeof a === "object" ? a.url : a) !== urlStr
+  );
   selectNetwork(app.value.selectedNetwork.key);
   toast.info("RPC endpoint removed");
 }
@@ -138,9 +167,27 @@ router.afterEach(async (to, from) => {
             />
             <div
               class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-skin-bg-alt flex items-center justify-center"
-              style="background-color: rgba(87, 179, 117, 0.2)"
+              :style="{
+                backgroundColor: app.selectedNetwork.snapshotRpcStatus?.status
+                  ?.isLoading
+                  ? 'rgba(245, 158, 11, 0.2)'
+                  : app.selectedNetwork.snapshotRpcStatus?.status
+                      ?.latestBlockNumber === 'NOT WORKING'
+                  ? 'rgba(235, 76, 91, 0.2)'
+                  : 'rgba(87, 179, 117, 0.2)',
+              }"
             >
-              <div class="w-2 h-2 rounded-full bg-skin-success"></div>
+              <div
+                :class="[
+                  'w-2 h-2 rounded-full',
+                  app.selectedNetwork.snapshotRpcStatus?.status?.isLoading
+                    ? 'bg-amber-400 animate-pulse'
+                    : app.selectedNetwork.snapshotRpcStatus?.status
+                        ?.latestBlockNumber === 'NOT WORKING'
+                    ? 'bg-skin-error'
+                    : 'bg-skin-success',
+                ]"
+              ></div>
             </div>
           </div>
           <div class="min-w-0">
@@ -454,6 +501,7 @@ router.afterEach(async (to, from) => {
               >
                 <a
                   target="_blank"
+                  rel="noopener noreferrer"
                   :href="
                     explorerBlockUrl(
                       app.selectedNetwork.snapshotRpcStatus.status
@@ -463,11 +511,19 @@ router.afterEach(async (to, from) => {
                   class="group/block"
                 >
                   <span
-                    class="text-lg font-bold text-skin-heading tabular-nums group-hover/block:text-skin-link transition-colors"
+                    :class="[
+                      'text-lg font-bold tabular-nums group-hover/block:text-skin-link transition-colors',
+                      app.selectedNetwork.snapshotRpcStatus.status
+                        .latestBlockNumber === 'NOT WORKING'
+                        ? 'text-skin-error'
+                        : 'text-skin-heading',
+                    ]"
                   >
                     {{
-                      app.selectedNetwork.snapshotRpcStatus.status
-                        .latestBlockNumber
+                      formatBlock(
+                        app.selectedNetwork.snapshotRpcStatus.status
+                          .latestBlockNumber
+                      )
                     }}
                   </span>
                 </a>
@@ -494,6 +550,7 @@ router.afterEach(async (to, from) => {
                     <a
                       :href="explorerBlockUrl(1)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="text-[10px] text-skin-text ml-1 hover:text-skin-heading hover:underline transition-colors"
                       title="Block #1"
                       >1st</a
@@ -516,6 +573,7 @@ router.afterEach(async (to, from) => {
                     <a
                       :href="explorerBlockUrl(app.selectedNetwork.start)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="text-[10px] text-skin-text ml-1 hover:text-skin-heading hover:underline transition-colors"
                       :title="`Block #${app.selectedNetwork.start}`"
                       >start</a
@@ -530,10 +588,9 @@ router.afterEach(async (to, from) => {
                 <span
                   :class="[
                     'text-lg font-bold tabular-nums',
-                    app.selectedNetwork.snapshotRpcStatus.status.multicall ===
-                    'ERROR!'
-                      ? 'text-skin-error'
-                      : 'text-skin-heading',
+                    multicallColorClass(
+                      app.selectedNetwork.snapshotRpcStatus.status.multicall
+                    ),
                   ]"
                 >
                   {{ app.selectedNetwork.snapshotRpcStatus.status.multicall }}
@@ -662,6 +719,7 @@ router.afterEach(async (to, from) => {
             >
             <a
               target="_blank"
+              rel="noopener noreferrer"
               :href="
                 explorerBlockUrl(
                   app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber
@@ -669,9 +727,18 @@ router.afterEach(async (to, from) => {
               "
             >
               <span
-                class="text-base font-bold text-skin-heading tabular-nums hover:text-skin-link transition-colors block"
+                :class="[
+                  'text-base font-bold tabular-nums hover:text-skin-link transition-colors block',
+                  app.selectedNetwork.snapshotRpcStatus.status
+                    .latestBlockNumber === 'NOT WORKING'
+                    ? 'text-skin-error'
+                    : 'text-skin-heading',
+                ]"
                 >{{
-                  app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber
+                  formatBlock(
+                    app.selectedNetwork.snapshotRpcStatus.status
+                      .latestBlockNumber
+                  )
                 }}</span
               >
             </a>
@@ -698,6 +765,7 @@ router.afterEach(async (to, from) => {
                 <a
                   :href="explorerBlockUrl(1)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-[10px] text-skin-text ml-0.5 hover:text-skin-heading hover:underline transition-colors"
                   >1st</a
                 >
@@ -719,6 +787,7 @@ router.afterEach(async (to, from) => {
                 <a
                   :href="explorerBlockUrl(app.selectedNetwork.start)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-[10px] text-skin-text ml-0.5 hover:text-skin-heading hover:underline transition-colors"
                   >start</a
                 >
@@ -733,10 +802,9 @@ router.afterEach(async (to, from) => {
             <span
               :class="[
                 'text-base font-bold tabular-nums block',
-                app.selectedNetwork.snapshotRpcStatus.status.multicall ===
-                'ERROR!'
-                  ? 'text-skin-error'
-                  : 'text-skin-heading',
+                multicallColorClass(
+                  app.selectedNetwork.snapshotRpcStatus.status.multicall
+                ),
               ]"
               >{{
                 app.selectedNetwork.snapshotRpcStatus.status.multicall
@@ -837,7 +905,6 @@ router.afterEach(async (to, from) => {
                     }}
                   </span>
                   <button
-                    v-if="hasIdleRpcs"
                     @click="testAllRpcs()"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded-lg bg-skin-primary text-skin-accent-foreground hover:opacity-90 transition-opacity"
                   >
@@ -891,8 +958,15 @@ router.afterEach(async (to, from) => {
           <tbody class="divide-y divide-skin-border/20">
             <tr
               v-for="(rpc, index) in app.selectedNetwork.rpcStatus"
-              v-bind:key="index"
-              class="transition-colors duration-150 hover:bg-skin-border"
+              :key="index"
+              :class="[
+                'transition-colors duration-150 hover:bg-skin-border animate-fade-in',
+                isNotWorking(rpc.status) ? 'bg-skin-error/5' : '',
+              ]"
+              :style="{
+                animationDelay: index * 50 + 'ms',
+                animationFillMode: 'backwards',
+              }"
             >
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2 min-w-0">
@@ -932,6 +1006,26 @@ router.afterEach(async (to, from) => {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="!rpc.status.isIdle && !rpc.status.isLoading"
+                      @click="testSingleRpc(rpc.index)"
+                      class="p-1 rounded-lg hover:bg-skin-border text-skin-text hover:text-skin-heading transition-colors"
+                      title="Re-test"
+                    >
+                      <svg
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         />
                       </svg>
                     </button>
@@ -979,13 +1073,19 @@ router.afterEach(async (to, from) => {
               >
                 <a
                   target="_blank"
+                  rel="noopener noreferrer"
                   :href="explorerBlockUrl(rpc.status.latestBlockNumber)"
                   class="group/block"
                 >
                   <span
-                    class="text-lg font-bold text-skin-heading tabular-nums group-hover/block:text-skin-link transition-colors"
+                    :class="[
+                      'text-lg font-bold tabular-nums group-hover/block:text-skin-link transition-colors',
+                      rpc.status.latestBlockNumber === 'NOT WORKING'
+                        ? 'text-skin-error'
+                        : 'text-skin-heading',
+                    ]"
                   >
-                    {{ rpc.status.latestBlockNumber }}
+                    {{ formatBlock(rpc.status.latestBlockNumber) }}
                   </span>
                 </a>
               </td>
@@ -1007,6 +1107,7 @@ router.afterEach(async (to, from) => {
                     <a
                       :href="explorerBlockUrl(1)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="text-[10px] text-skin-text ml-1 hover:text-skin-heading hover:underline transition-colors"
                       title="Block #1"
                       >1st</a
@@ -1025,6 +1126,7 @@ router.afterEach(async (to, from) => {
                     <a
                       :href="explorerBlockUrl(app.selectedNetwork.start)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="text-[10px] text-skin-text ml-1 hover:text-skin-heading hover:underline transition-colors"
                       :title="`Block #${app.selectedNetwork.start}`"
                       >start</a
@@ -1039,9 +1141,7 @@ router.afterEach(async (to, from) => {
                 <span
                   :class="[
                     'text-lg font-bold tabular-nums',
-                    rpc.status.multicall === 'ERROR!'
-                      ? 'text-skin-error'
-                      : 'text-skin-heading',
+                    multicallColorClass(rpc.status.multicall),
                   ]"
                 >
                   {{ rpc.status.multicall }}
@@ -1129,7 +1229,6 @@ router.afterEach(async (to, from) => {
           </span>
         </div>
         <button
-          v-if="hasIdleRpcs"
           @click="testAllRpcs()"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-skin-border text-skin-heading hover:bg-skin-text/20 transition-colors"
         >
@@ -1149,7 +1248,14 @@ router.afterEach(async (to, from) => {
       <div
         v-for="(rpc, index) in app.selectedNetwork.rpcStatus"
         :key="'m-' + index"
-        class="glass-panel-solid p-4 space-y-3"
+        :class="[
+          'glass-panel-solid p-4 space-y-3 animate-fade-in',
+          isNotWorking(rpc.status) ? 'bg-skin-error/5' : '',
+        ]"
+        :style="{
+          animationDelay: index * 50 + 'ms',
+          animationFillMode: 'backwards',
+        }"
       >
         <!-- RPC URL + actions -->
         <div class="flex items-start justify-between gap-2">
@@ -1197,6 +1303,26 @@ router.afterEach(async (to, from) => {
                 />
               </svg>
             </button>
+            <button
+              v-if="!rpc.status.isIdle && !rpc.status.isLoading"
+              @click="testSingleRpc(rpc.index)"
+              class="p-1.5 rounded-lg hover:bg-skin-border text-skin-text hover:text-skin-heading transition-colors"
+              title="Re-test"
+            >
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -1235,12 +1361,18 @@ router.afterEach(async (to, from) => {
             >
             <a
               target="_blank"
+              rel="noopener noreferrer"
               :href="explorerBlockUrl(rpc.status.latestBlockNumber)"
             >
               <span
-                class="text-base font-bold text-skin-heading tabular-nums hover:text-skin-link transition-colors block"
+                :class="[
+                  'text-base font-bold tabular-nums hover:text-skin-link transition-colors block',
+                  rpc.status.latestBlockNumber === 'NOT WORKING'
+                    ? 'text-skin-error'
+                    : 'text-skin-heading',
+                ]"
               >
-                {{ rpc.status.latestBlockNumber }}
+                {{ formatBlock(rpc.status.latestBlockNumber) }}
               </span>
             </a>
           </div>
@@ -1265,6 +1397,7 @@ router.afterEach(async (to, from) => {
                 <a
                   :href="explorerBlockUrl(1)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-[10px] text-skin-text ml-0.5 hover:text-skin-heading hover:underline transition-colors"
                   title="Block #1"
                   >1st</a
@@ -1283,6 +1416,7 @@ router.afterEach(async (to, from) => {
                 <a
                   :href="explorerBlockUrl(app.selectedNetwork.start)"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="text-[10px] text-skin-text ml-0.5 hover:text-skin-heading hover:underline transition-colors"
                   :title="`Block #${app.selectedNetwork.start}`"
                   >start</a
@@ -1300,9 +1434,7 @@ router.afterEach(async (to, from) => {
             <span
               :class="[
                 'text-base font-bold tabular-nums block',
-                rpc.status.multicall === 'ERROR!'
-                  ? 'text-skin-error'
-                  : 'text-skin-heading',
+                multicallColorClass(rpc.status.multicall),
               ]"
             >
               {{ rpc.status.multicall }}
@@ -1375,9 +1507,10 @@ router.afterEach(async (to, from) => {
 
       <!-- Mobile Add RPC -->
       <div class="glass-panel-solid overflow-hidden">
-        <div
+        <button
+          type="button"
           v-if="!app.selectedNetwork.addRPCInput"
-          class="p-4 cursor-pointer group"
+          class="p-4 cursor-pointer group w-full text-left"
           @click="app.selectedNetwork.addRPCInput = true"
         >
           <div
@@ -1398,7 +1531,7 @@ router.afterEach(async (to, from) => {
             </svg>
             <span class="text-sm font-medium">Add RPC endpoint</span>
           </div>
-        </div>
+        </button>
         <div v-else class="p-4 space-y-3">
           <input
             type="text"

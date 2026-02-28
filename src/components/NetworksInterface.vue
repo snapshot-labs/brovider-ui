@@ -137,10 +137,16 @@ onUnmounted(() => {
         />
         <div
           v-if="!isMobile"
-          class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-skin-primary/40 transition-colors z-10"
-          :class="{ 'bg-skin-primary/40': isResizing }"
+          class="absolute top-0 right-0 w-1.5 h-full cursor-col-resize group/resize z-10"
           @mousedown="startResize"
-        />
+        >
+          <div
+            :class="[
+              'w-full h-full transition-colors duration-150',
+              isResizing ? 'bg-skin-primary/60' : 'hover:bg-skin-primary/30',
+            ]"
+          ></div>
+        </div>
       </div>
     </Transition>
 

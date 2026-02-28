@@ -130,7 +130,26 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
       class="flex-1 overflow-y-auto pb-4"
       :class="isCollapsed ? 'px-1.5' : 'px-3'"
     >
-      <ul :class="isCollapsed ? 'space-y-1' : 'space-y-0.5'">
+      <!-- Loading skeletons -->
+      <ul
+        v-if="app.isLoading"
+        :class="isCollapsed ? 'space-y-1' : 'space-y-0.5'"
+      >
+        <li
+          v-for="i in 12"
+          :key="'skeleton-' + i"
+          :class="isCollapsed ? 'px-0' : 'px-3 py-2.5'"
+        >
+          <div v-if="isCollapsed" class="flex items-center justify-center py-2">
+            <div class="shimmer-bar w-8 h-5 !rounded-lg"></div>
+          </div>
+          <div v-else class="flex items-center gap-2">
+            <div class="shimmer-bar w-10 h-5 !rounded-lg flex-shrink-0"></div>
+            <div class="shimmer-bar flex-1 h-5 !rounded-lg"></div>
+          </div>
+        </li>
+      </ul>
+      <ul v-else :class="isCollapsed ? 'space-y-1' : 'space-y-0.5'">
         <li
           v-for="(item, index) in filteredNetworks"
           :key="index"
@@ -243,7 +262,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
         </li>
       </ul>
       <div
-        v-if="!isCollapsed && filteredNetworks.length === 0"
+        v-if="!app.isLoading && !isCollapsed && filteredNetworks.length === 0"
         class="flex flex-col items-center justify-center py-12 text-skin-text"
       >
         <svg
