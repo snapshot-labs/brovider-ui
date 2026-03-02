@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   content: ["./index.html", "./src/**/*.{js,ts,vue}"],
   darkMode: "class",
   theme: {

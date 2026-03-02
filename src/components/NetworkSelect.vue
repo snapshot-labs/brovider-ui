@@ -12,21 +12,30 @@ defineEmits<{
   (e: "network-selected"): void;
 }>();
 
-const { app } = useApp();
+const { app, toggleFavorite } = useApp();
 const search = ref("");
 
 const isCollapsed = computed(() => props.sidebarWidth < COLLAPSE_THRESHOLD);
 
 const filteredNetworks = computed(() => {
   const networks = Object.values(app.value.networks);
-  if (!search.value.trim()) return networks;
-  const q = search.value.toLowerCase().trim();
-  return networks.filter(
-    (item) =>
-      item.name?.toLowerCase().includes(q) ||
-      item.key?.toString().includes(q) ||
-      item.shortName?.toLowerCase().includes(q)
-  );
+  let result = networks;
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase().trim();
+    result = result.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(q) ||
+        item.key?.toString().includes(q) ||
+        item.shortName?.toLowerCase().includes(q)
+    );
+  }
+  return result.sort((a: any, b: any) => {
+    const aFav = !!app.value.favoriteNetworks[a.key];
+    const bFav = !!app.value.favoriteNetworks[b.key];
+    if (aFav && !bFav) return -1;
+    if (!aFav && bFav) return 1;
+    return 0;
+  });
 });
 
 function onKeydown(event: KeyboardEvent) {
@@ -168,12 +177,13 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
             <div
               v-if="isCollapsed"
               :class="[
-                'flex items-center justify-center py-2 rounded-xl transition-all duration-200',
+                'flex items-center justify-center py-2 rounded-xl transition-all duration-200 relative',
                 $route.params.id === item.key
                   ? 'bg-skin-primary text-skin-accent-foreground'
                   : 'text-skin-text hover:bg-white/[0.08]',
               ]"
               :title="item.name + ' (' + item.key + ')'"
+              v-tooltip.right="item.name + ' (' + item.key + ')'"
             >
               <span
                 :class="[
@@ -185,6 +195,18 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
               >
                 {{ item.key }}
               </span>
+              <span
+                v-if="app.networkHealthMap[item.key]"
+                :class="[
+                  'absolute top-1 right-1 w-2 h-2 rounded-full border border-skin-bg',
+                  app.networkHealthMap[item.key] === 'healthy' ? 'bg-skin-success' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'bg-yellow-500' : 'bg-skin-error',
+                ]"
+                :title="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+              v-tooltip.right="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+              ></span>
             </div>
             <!-- Expanded view -->
             <div
@@ -195,6 +217,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
                   ? 'bg-skin-primary text-skin-accent-foreground'
                   : 'text-skin-text hover:bg-white/[0.08]',
               ]"
+              v-tooltip.right="item.name + ' (' + item.key + ')'"
             >
               <span
                 :class="[
@@ -219,6 +242,21 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
               </span>
               <!-- Badges -->
               <div class="flex items-center gap-1 flex-shrink-0">
+                <!-- Favorite star -->
+                <button
+                  @click.prevent.stop="toggleFavorite(item.key)"
+                  :class="[
+                    'p-0.5 rounded transition-colors',
+                    app.favoriteNetworks[item.key]
+                      ? 'text-yellow-400'
+                      : 'text-transparent group-hover:text-skin-text/30 hover:!text-yellow-400',
+                  ]"
+                  :title="app.favoriteNetworks[item.key] ? 'Remove from favorites' : 'Add to favorites'"
+                >
+                  <svg class="w-3 h-3" :fill="app.favoriteNetworks[item.key] ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
                 <!-- Premium badge -->
                 <span
                   v-if="
@@ -256,6 +294,17 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
                   title="Not found on Snapshot Hub API"
                   >!</span
                 >
+                <!-- Health dot -->
+                <span
+                  v-if="app.networkHealthMap[item.key]"
+                  :class="[
+                    'w-2 h-2 rounded-full flex-shrink-0',
+                    app.networkHealthMap[item.key] === 'healthy' ? 'bg-skin-success' :
+                    app.networkHealthMap[item.key] === 'degraded' ? 'bg-yellow-500' : 'bg-skin-error',
+                  ]"
+                  :title="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                    app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+                ></span>
               </div>
             </div>
           </router-link>

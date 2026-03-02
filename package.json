@@ -1,36 +1,37 @@
 {
   "name": "networks",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint": "eslint \"./src/*/**/*.{ts,vue,json}\" --fix"
+    "lint": "eslint ./src --fix"
   },
   "dependencies": {
-    "@ethersproject/abi": "^5.4.1",
-    "@ethersproject/contracts": "^5.4.1",
-    "@ethersproject/providers": "^5.4.3",
-    "copy-to-clipboard": "^3.3.1",
+    "@ethersproject/abi": "^5.8.0",
+    "@ethersproject/contracts": "^5.8.0",
+    "@ethersproject/providers": "^5.8.0",
+    "copy-to-clipboard": "^3.3.3",
     "dom-to-image": "^2.6.0",
-    "vue": "^3.0.5",
-    "vue-router": "^4.0.14"
+    "floating-vue": "^5.2.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.21.0",
-    "@typescript-eslint/parser": "^5.21.0",
-    "@vitejs/plugin-vue": "^1.3.0",
-    "@vue/compiler-sfc": "^3.0.5",
-    "@vue/eslint-config-prettier": "^6.0.0",
-    "@vue/eslint-config-typescript": "^9.0.0",
-    "autoprefixer": "^10.3.1",
-    "eslint": "^8.14.0",
-    "eslint-plugin-prettier": "^3.4.0",
-    "eslint-plugin-vue": "^7.15.1",
-    "postcss": "^8.3.6",
-    "prettier": "^2.6.2",
-    "tailwindcss": "^3",
-    "typescript": "^4.6.4",
-    "vite": "^2.4.4"
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.4.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.21.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-vue": "^9.32.0",
+    "postcss": "^8.5.3",
+    "prettier": "^3.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0"
   }
 }

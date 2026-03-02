@@ -9,6 +9,8 @@ const ABI = [
 
 const RPC_TIMEOUT = 10000;
 
+const CHAINLIST_URL = 'https://chainlist.org/rpcs.json';
+
 type SnapshotNetwork = {
   id: string;
   name: string;
@@ -49,6 +51,27 @@ type NetworkConfig = {
   snapshotRpcStatus?: RpcEntry;
 };
 
+let chainlistFetchPromise: Promise<any[]> | null = null;
+
+function fetchChainlist(): Promise<any[]> {
+  if (state.chainlistCache) return Promise.resolve(state.chainlistCache);
+  if (chainlistFetchPromise) return chainlistFetchPromise;
+
+  chainlistFetchPromise = fetch(CHAINLIST_URL)
+    .then(r => r.json())
+    .then((data: any[]) => {
+      state.chainlistCache = data;
+      chainlistFetchPromise = null;
+      return data;
+    })
+    .catch((error) => {
+      chainlistFetchPromise = null;
+      throw error;
+    });
+
+  return chainlistFetchPromise;
+}
+
 const state = reactive({
   selectedNetwork: null as NetworkConfig | null,
   isEditingNetwork: false,
@@ -59,6 +82,11 @@ const state = reactive({
   isLoading: true,
   snapshotNetworks: {} as Record<string, SnapshotNetwork>,
   areSnapshotNetworksLoaded: false,
+  networkHealthMap: {} as Record<string, "healthy" | "degraded" | "down">,
+  favoriteNetworks: JSON.parse(localStorage.getItem('brovider-favorites') || '{}') as Record<string, boolean>,
+  latencyHistory: {} as Record<string, Record<string, number[]>>,
+  chainlistCache: null as any[] | null,
+  isChainlistLoading: false,
 });
 
 function editNetworkButtonClick() {
@@ -75,6 +103,28 @@ function editNetworksJSONButtonClick() {
   state.isEditingNetwork = true;
   state.editNetworkType = "full";
   state.newNetworkObject = JSON.stringify(state.networks, null, 2);
+}
+
+function toggleFavorite(key: string) {
+  if (state.favoriteNetworks[key]) {
+    delete state.favoriteNetworks[key];
+  } else {
+    state.favoriteNetworks[key] = true;
+  }
+  localStorage.setItem('brovider-favorites', JSON.stringify(state.favoriteNetworks));
+}
+
+function recordLatency(networkKey: string, rpcUrl: string, multicallMs: number) {
+  if (!state.latencyHistory[networkKey]) {
+    state.latencyHistory[networkKey] = {};
+  }
+  if (!state.latencyHistory[networkKey][rpcUrl]) {
+    state.latencyHistory[networkKey][rpcUrl] = [];
+  }
+  state.latencyHistory[networkKey][rpcUrl].push(multicallMs);
+  if (state.latencyHistory[networkKey][rpcUrl].length > 10) {
+    state.latencyHistory[networkKey][rpcUrl].shift();
+  }
 }
 
 function createProvider(url: string | Record<string, any>) {
@@ -184,6 +234,13 @@ async function checkSingleRpc(rpc: RpcEntry, selectedNetwork: NetworkConfig) {
       isLoading: false,
     };
   }
+
+  const ms = parseFloat((rpc.status as RpcStatus).multicall);
+  if (!isNaN(ms)) {
+    const url = typeof rpc.url === 'object' ? rpc.url.url : rpc.url;
+
+    recordLatency(selectedNetwork.key, url, ms);
+  }
 }
 
 async function checkNodeLimitForRpc(
@@ -279,6 +336,38 @@ async function checkSnapshotRpc(selectedNetwork: NetworkConfig) {
       isLoading: false,
     };
   }
+
+  const status = selectedNetwork.snapshotRpcStatus.status as RpcStatus;
+  if (status.latestBlockNumber === "NOT WORKING") {
+    state.networkHealthMap[selectedNetwork.key] = "down";
+  } else if (status.multicall === "ERROR!" || status.fullArchiveNode !== "Yes") {
+    state.networkHealthMap[selectedNetwork.key] = "degraded";
+  } else {
+    state.networkHealthMap[selectedNetwork.key] = "healthy";
+  }
+
+  const ms = parseFloat(status.multicall);
+  if (!isNaN(ms)) {
+    recordLatency(selectedNetwork.key, snapshotUrl, ms);
+  }
+}
+
+function addRpcToNetwork(rpcUrl: string | Record<string, any>) {
+  const selectedNetwork = state.selectedNetwork;
+  if (!selectedNetwork) return;
+
+  state.networks[selectedNetwork.key].rpc.push(rpcUrl);
+
+  const newIndex = selectedNetwork.rpcStatus?.length ?? 0;
+  selectedNetwork.rpc.push(rpcUrl);
+  selectedNetwork.rpcStatus = [
+    ...(selectedNetwork.rpcStatus || []),
+    {
+      url: rpcUrl,
+      index: newIndex,
+      status: { isIdle: true, isLoading: false },
+    },
+  ];
 }
 
 async function selectNetwork(networkKey: string) {
@@ -431,7 +520,49 @@ export function useApp() {
       return null;
     }
   }
+  function prefetchChainlist() {
+    if (!state.chainlistCache && !chainlistFetchPromise) {
+      fetchChainlist();
+    }
+  }
 
+  async function addChainlistRpc(): Promise<{ added: string | null; remaining: number }> {
+    const selectedNetwork = state.selectedNetwork;
+    if (!selectedNetwork) return { added: null, remaining: 0 };
+
+    if (!state.chainlistCache) {
+      state.isChainlistLoading = true;
+      try {
+        await fetchChainlist();
+      } catch (error) {
+        state.isChainlistLoading = false;
+        throw new Error('Failed to fetch chainlist data');
+      }
+      state.isChainlistLoading = false;
+    }
+
+    const chainData = state.chainlistCache!.find(
+      (c: any) => c.chainId?.toString() === selectedNetwork.key
+    );
+    if (!chainData?.rpc?.length) return { added: null, remaining: 0 };
+
+    const httpRpcs: string[] = chainData.rpc
+      .map((r: any) => (typeof r === 'string' ? r : r.url))
+      .filter((url: string) => url?.startsWith('http'));
+
+    const existingUrls = new Set(
+      selectedNetwork.rpc.map((r: any) => (typeof r === 'object' ? r.url : r))
+    );
+
+    const available = httpRpcs.filter((url: string) => !existingUrls.has(url));
+    if (available.length === 0) return { added: null, remaining: 0 };
+
+    const randomUrl = available[Math.floor(Math.random() * available.length)];
+
+    addRpcToNetwork(randomUrl);
+
+    return { added: randomUrl, remaining: available.length - 1 };
+  }
   return {
     init,
     selectNetwork,
@@ -443,6 +574,10 @@ export function useApp() {
     editNetworksJSONButtonClick,
     changeNetworksObject,
     getChainIdFromRpc,
+    toggleFavorite,
+    addChainlistRpc,
+    prefetchChainlist,
+    addRpcToNetwork,
     app: computed(() => state),
   };
 }

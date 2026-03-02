@@ -28,8 +28,16 @@
   /* Selection color */
   ::selection {
     background-color: rgba(255, 255, 255, 0.15);
-    @apply text-skin-heading;
   }
+}
+
+/* floating-vue tooltip theme overrides */
+.v-popper--theme-tooltip .v-popper__inner {
+  @apply bg-skin-bg-alt text-skin-heading text-xs font-medium px-2.5 py-1.5 rounded-lg border border-skin-border shadow-lg;
+}
+.v-popper--theme-tooltip .v-popper__arrow-outer,
+.v-popper--theme-tooltip .v-popper__arrow-inner {
+  border-color: rgb(28, 27, 32);
 }
 
 @layer components {

@@ -2,14 +2,11 @@
 import { useApp } from "../composables/useApp";
 import { useToast } from "../composables/useToast";
 
-const { app, selectNetwork } = useApp();
+const { app, addRpcToNetwork } = useApp();
 const toast = useToast();
 
 function addRpc() {
-  app.value.networks[app.value.selectedNetwork.key].rpc.push(
-    app.value.selectedNetwork.newRPC
-  );
-  selectNetwork(app.value.selectedNetwork.key);
+  addRpcToNetwork(app.value.selectedNetwork.newRPC);
   toast.success("RPC endpoint added");
 }
 </script>
