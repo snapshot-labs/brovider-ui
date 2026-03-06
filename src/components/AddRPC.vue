@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useApp } from "../composables/useApp";
 import { useToast } from "../composables/useToast";
 
-const { app, addRpcToNetwork } = useApp();
+const { addRpcToNetwork } = useApp();
 const toast = useToast();
 
+const addRpcInput = ref(false);
+const newRpcUrl = ref("");
+
 function addRpc() {
-  addRpcToNetwork(app.value.selectedNetwork.newRPC);
+  const url = newRpcUrl.value.trim();
+  if (!url) return;
+  addRpcToNetwork(url);
+  newRpcUrl.value = "";
+  addRpcInput.value = false;
   toast.success("RPC endpoint added");
 }
 </script>
@@ -17,9 +25,9 @@ function addRpc() {
       colspan="5"
       class="p-4 border-t border-skin-border/30 cursor-pointer group"
       tabindex="0"
-      v-if="!app.selectedNetwork.addRPCInput"
-      @click="app.selectedNetwork.addRPCInput = true"
-      @keydown.enter="app.selectedNetwork.addRPCInput = true"
+      v-if="!addRpcInput"
+      @click="addRpcInput = true"
+      @keydown.enter="addRpcInput = true"
     >
       <div
         class="flex items-center gap-2 text-skin-text group-hover:text-skin-heading transition-colors duration-200"
@@ -43,20 +51,20 @@ function addRpc() {
     <td
       colspan="5"
       class="p-4 border-t border-skin-border/30"
-      v-if="app.selectedNetwork.addRPCInput"
+      v-if="addRpcInput"
     >
       <div class="flex items-center gap-3">
         <input
           type="text"
           class="flex-1 px-4 py-2.5 bg-skin-bg border border-skin-border rounded-xl text-sm text-skin-heading focus:outline-none focus:ring-1 focus:ring-skin-heading/30 focus:border-skin-text transition-all duration-200"
-          v-model="app.selectedNetwork.newRPC"
+          v-model="newRpcUrl"
           placeholder="https://rpc.example.com"
         />
         <button @click="addRpc()" class="btn-primary whitespace-nowrap">
           Add
         </button>
         <button
-          @click="app.selectedNetwork.addRPCInput = false"
+          @click="addRpcInput = false"
           class="btn-secondary whitespace-nowrap"
         >
           Cancel

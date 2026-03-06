@@ -26,6 +26,7 @@ const {
   toggleFavorite,
   addChainlistRpc,
   prefetchChainlist,
+  addRpcToNetwork,
 } = useApp();
 const toast = useToast();
 const route = useRoute();
@@ -79,29 +80,30 @@ function isNotWorking(status: any) {
   return status?.latestBlockNumber === "NOT WORKING";
 }
 
-function copyUrl(url: string | { url: string }) {
+function copyUrl(url: string | Record<string, any>) {
   copy(getRpcUrl(url));
   toast.success("RPC URL copied");
 }
 
-function getRpcUrl(url: string | { url: string }) {
+function getRpcUrl(url: string | Record<string, any>) {
   return typeof url === "object" ? url.url : url;
 }
 
-function removeRpc(url: string | { url: string }) {
+function removeRpc(url: string | Record<string, any>) {
   const urlStr = getRpcUrl(url);
-  app.value.networks[app.value.selectedNetwork.key].rpc = app.value.networks[
-    app.value.selectedNetwork.key
+  const network = app.value.selectedNetwork!;
+  app.value.networks[network.key].rpc = app.value.networks[
+    network.key
   ].rpc.filter(
-    (a: string | { url: string }) =>
+    (a: string | Record<string, any>) =>
       (typeof a === "object" ? a.url : a) !== urlStr
   );
-  selectNetwork(app.value.selectedNetwork.key);
+  selectNetwork(network.key);
   toast.info("RPC endpoint removed");
 }
 
 function refreshNetwork() {
-  selectNetwork(app.value.selectedNetwork.key);
+  selectNetwork(app.value.selectedNetwork!.key);
   toast.info("Refreshing network data…");
 }
 
@@ -111,10 +113,9 @@ function applyChanges() {
 }
 
 function addRpcMobile() {
-  app.value.networks[app.value.selectedNetwork.key].rpc.push(
-    app.value.selectedNetwork.newRPC
-  );
-  selectNetwork(app.value.selectedNetwork.key);
+  addRpcToNetwork(newRpcUrl.value);
+  newRpcUrl.value = '';
+  addRpcInput.value = false;
   toast.success("RPC endpoint added");
 }
 
@@ -136,8 +137,8 @@ async function handleAddChainlistRpc() {
 
 async function imageCopy() {
   try {
-    const node = document.getElementById("networkTester");
-    const blob = await domtoimage.toBlob(node);
+    const node = document.getElementById("networkTester") as HTMLElement;
+    const blob = await domtoimage.toBlob(node as unknown as Node, {});
 
     navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
     toast.success("Screenshot copied to clipboard");
@@ -158,6 +159,8 @@ onMounted(async () => {
 
 router.afterEach(async (to, from) => {
   if (to.params.id !== from.params.id && route.params.id) {
+    addRpcInput.value = false;
+    newRpcUrl.value = '';
     await selectNetwork(route.params.id as string);
 
     if (to.query.autoTest) {
@@ -170,6 +173,8 @@ router.afterEach(async (to, from) => {
 
 const isShowingShortcuts = ref(false);
 const isExportDropdownOpen = ref(false);
+const addRpcInput = ref(false);
+const newRpcUrl = ref('');
 
 const isFavorited = computed(() => {
   const key = app.value.selectedNetwork?.key;
@@ -260,7 +265,8 @@ function blockLag(blockNumber: number | string): number | null {
   return maxBlockNumber.value - blockNumber;
 }
 
-function blockLagClass(lag: number): string {
+function blockLagClass(lag: number | null): string {
+  if (lag === null) return '';
   if (lag <= 1) return 'text-skin-success';
   if (lag <= 5) return 'text-skin-warning';
   return 'text-skin-error';
@@ -461,7 +467,7 @@ function exportResultsAsJson() {
   toast.success('Results copied as JSON');
 }
 
-function latencyTrend(rpcUrl: string | { url: string }): 'improved' | 'degraded' | 'stable' | null {
+function latencyTrend(rpcUrl: string | Record<string, any>): 'improved' | 'degraded' | 'stable' | null {
   const networkKey = app.value.selectedNetwork?.key;
   if (!networkKey) return null;
   const url = typeof rpcUrl === 'object' ? rpcUrl.url : rpcUrl;
@@ -1080,10 +1086,10 @@ onUnmounted(() => {
                   </span>
                 </a>
                 <span
-                  v-if="blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber) > 0"
-                  :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber))]"
+                  v-if="(blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber) ?? 0) > 0"
+                  :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber))]"
                 >
-                  -{{ blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber) }}
+                  -{{ blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber) }}
                 </span>
               </td>
               <td
@@ -1301,10 +1307,10 @@ onUnmounted(() => {
               >
             </a>
             <span
-              v-if="blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber) > 0"
-              :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber))]"
+              v-if="(blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber) ?? 0) > 0"
+              :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber))]"
             >
-              -{{ blockLag(app.selectedNetwork.snapshotRpcStatus.status.latestBlockNumber) }}
+              -{{ blockLag(app.selectedNetwork?.snapshotRpcStatus?.status?.latestBlockNumber) }}
             </span>
           </div>
           <div class="space-y-1">
@@ -1691,7 +1697,7 @@ onUnmounted(() => {
                   </span>
                 </a>
                 <span
-                  v-if="blockLag(rpc.status.latestBlockNumber) > 0"
+                  v-if="(blockLag(rpc.status.latestBlockNumber) ?? 0) > 0"
                   :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(rpc.status.latestBlockNumber))]"
                 >
                   -{{ blockLag(rpc.status.latestBlockNumber) }}
@@ -2050,7 +2056,7 @@ onUnmounted(() => {
               </span>
             </a>
             <span
-              v-if="blockLag(rpc.status.latestBlockNumber) > 0"
+              v-if="(blockLag(rpc.status.latestBlockNumber) ?? 0) > 0"
               :class="['text-[10px] font-medium ml-1', blockLagClass(blockLag(rpc.status.latestBlockNumber))]"
             >
               -{{ blockLag(rpc.status.latestBlockNumber) }}
@@ -2218,9 +2224,9 @@ onUnmounted(() => {
       <div class="glass-panel-solid overflow-hidden">
         <button
           type="button"
-          v-if="!app.selectedNetwork.addRPCInput"
+          v-if="!addRpcInput"
           class="p-4 cursor-pointer group w-full text-left"
-          @click="app.selectedNetwork.addRPCInput = true"
+          @click="addRpcInput = true"
         >
           <div
             class="flex items-center gap-2 text-skin-text group-hover:text-skin-heading transition-colors duration-200"
@@ -2245,7 +2251,7 @@ onUnmounted(() => {
           <input
             type="text"
             class="w-full px-3 py-2.5 bg-skin-bg border border-skin-border rounded-xl text-sm text-skin-heading focus:outline-none focus:ring-1 focus:ring-skin-heading/30 focus:border-skin-text transition-all duration-200"
-            v-model="app.selectedNetwork.newRPC"
+            v-model="newRpcUrl"
             placeholder="https://rpc.example.com"
           />
           <div class="flex items-center gap-2">
@@ -2253,7 +2259,7 @@ onUnmounted(() => {
               Add
             </button>
             <button
-              @click="app.selectedNetwork.addRPCInput = false"
+              @click="addRpcInput = false"
               class="btn-secondary text-sm flex-1"
             >
               Cancel
@@ -2263,7 +2269,7 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
-  <Errors :rpcStatus="app.selectedNetwork?.rpcStatus" />
+  <Errors :rpcStatus="app.selectedNetwork?.rpcStatus ?? []" />
   <!-- Keyboard Shortcuts Modal -->
   <Teleport to="body">
     <Transition name="fade">

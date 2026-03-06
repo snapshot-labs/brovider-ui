@@ -26,13 +26,13 @@ type RpcStatus = {
   multicall: string;
   nodeLimit: string;
   isLoading: boolean;
-  isIdle?: boolean;
+  isIdle: boolean;
 };
 
 type RpcEntry = {
-  url: string | { url: string; [key: string]: any };
+  url: string | Record<string, any>;
   index: number;
-  status: RpcStatus | { isIdle: boolean; isLoading: boolean };
+  status: RpcStatus;
 };
 
 type NetworkConfig = {
@@ -90,6 +90,7 @@ const state = reactive({
 });
 
 function editNetworkButtonClick() {
+  if (!state.selectedNetwork) return;
   state.isEditingNetwork = true;
   state.editNetworkType = "selected";
   state.newNetworkObject = JSON.stringify(
@@ -128,11 +129,11 @@ function recordLatency(networkKey: string, rpcUrl: string, multicallMs: number) 
 }
 
 function createProvider(url: string | Record<string, any>) {
-  const connectionInfo =
+  const connectionInfo: Record<string, any> =
     typeof url === "object"
       ? { ...url, timeout: RPC_TIMEOUT, allowGzip: true }
       : { url, timeout: RPC_TIMEOUT, allowGzip: true };
-  return new StaticJsonRpcProvider(connectionInfo);
+  return new StaticJsonRpcProvider(connectionInfo as any);
 }
 
 async function checkRpcCore(
@@ -148,7 +149,7 @@ async function checkRpcCore(
   try {
     latestBlockNumber = await provider.getBlockNumber();
   } catch (error) {
-    errors.push("getBlockNumber Error: " + error.message);
+    errors.push("getBlockNumber Error: " + (error as Error).message);
     return {
       latestBlockNumber: "NOT WORKING",
       fullArchiveNode: "-",
@@ -157,27 +158,28 @@ async function checkRpcCore(
       multicall: "-",
       nodeLimit: "-",
       isLoading: false,
+      isIdle: false,
     };
   }
 
   try {
-    fullArchiveNode = await provider.getBalance(selectedNetwork.multicall, 1);
+    fullArchiveNode = (await provider.getBalance(selectedNetwork.multicall, 1)) as any;
     fullArchiveNode = parseFloat(fullArchiveNode as any) >= 0 ? "Yes" : "No";
   } catch (error) {
     fullArchiveNode = "ERROR!";
-    errors.push("fullArchiveNode Error: " + error.message);
+    errors.push("fullArchiveNode Error: " + (error as Error).message);
   }
 
   try {
-    fullArchiveNodeStart = await provider.getBalance(
+    fullArchiveNodeStart = (await provider.getBalance(
       selectedNetwork.multicall,
       selectedNetwork.start
-    );
+    )) as any;
     fullArchiveNodeStart =
       parseFloat(fullArchiveNodeStart as any) >= 0 ? "Yes" : "No";
   } catch (error) {
     fullArchiveNodeStart = "ERROR!";
-    errors.push("fullArchiveNodeStart Error: " + error.message);
+    errors.push("fullArchiveNodeStart Error: " + (error as Error).message);
   }
 
   try {
@@ -202,7 +204,7 @@ async function checkRpcCore(
     multicallResult = (multicallAvgTime / 3).toFixed(2) + " ms";
   } catch (error) {
     multicallResult = "ERROR!";
-    errors.push("multicall Error: " + error.message);
+    errors.push("multicall Error: " + (error as Error).message);
   }
 
   return {
@@ -213,6 +215,7 @@ async function checkRpcCore(
     multicall: multicallResult,
     nodeLimit: multicallResult === "ERROR!" ? "-" : "idle",
     isLoading: false,
+    isIdle: false,
   };
 }
 
@@ -228,10 +231,11 @@ async function checkSingleRpc(rpc: RpcEntry, selectedNetwork: NetworkConfig) {
       latestBlockNumber: "NOT WORKING",
       fullArchiveNode: "-",
       fullArchiveNodeStart: "-",
-      errors: ["Provider Error: " + error.message],
+      errors: ["Provider Error: " + (error as Error).message],
       multicall: "-",
       nodeLimit: "-",
       isLoading: false,
+      isIdle: false,
     };
   }
 
@@ -299,14 +303,16 @@ function changeNetworksObject() {
   try {
     if (state.editNetworkType === "full") {
       state.networks = JSON.parse(state.newNetworkObject);
-    } else {
+    } else if (state.selectedNetwork) {
       state.networks[state.selectedNetwork.key] = JSON.parse(
         state.newNetworkObject
       );
     }
-    selectNetwork(state.selectedNetwork.key);
+    if (state.selectedNetwork) {
+      selectNetwork(state.selectedNetwork.key);
+    }
   } catch (error) {
-    state.error = error.message;
+    state.error = (error as Error).message;
   }
 }
 
@@ -315,7 +321,7 @@ async function checkSnapshotRpc(selectedNetwork: NetworkConfig) {
   selectedNetwork.snapshotRpcStatus = {
     url: snapshotUrl,
     index: 0,
-    status: { isLoading: true, isIdle: false },
+    status: { isLoading: true, isIdle: false } as RpcStatus,
   };
 
   try {
@@ -330,10 +336,11 @@ async function checkSnapshotRpc(selectedNetwork: NetworkConfig) {
       latestBlockNumber: "NOT WORKING",
       fullArchiveNode: "-",
       fullArchiveNodeStart: "-",
-      errors: ["Provider Error: " + error.message],
+      errors: ["Provider Error: " + (error as Error).message],
       multicall: "-",
       nodeLimit: "-",
       isLoading: false,
+      isIdle: false,
     };
   }
 
@@ -365,7 +372,7 @@ function addRpcToNetwork(rpcUrl: string | Record<string, any>) {
     {
       url: rpcUrl,
       index: newIndex,
-      status: { isIdle: true, isLoading: false },
+      status: { isIdle: true, isLoading: false } as RpcStatus,
     },
   ];
 }
@@ -378,14 +385,11 @@ async function selectNetwork(networkKey: string) {
   state.selectedNetwork = JSON.parse(
     JSON.stringify(state.networks[networkKey])
   );
-  const selectedNetwork = state.selectedNetwork;
+  const selectedNetwork = state.selectedNetwork as NetworkConfig;
   selectedNetwork.rpcStatus = selectedNetwork.rpc.map((rpc, index) => ({
     url: rpc,
     index,
-    status: {
-      isIdle: true,
-      isLoading: false,
-    },
+    status: { isIdle: true, isLoading: false } as RpcStatus,
   }));
 
   await checkSnapshotRpc(selectedNetwork);
@@ -395,10 +399,10 @@ async function testSingleRpc(rpcIndex: number) {
   const selectedNetwork = state.selectedNetwork;
   if (!selectedNetwork) return;
 
-  const rpc = selectedNetwork.rpcStatus[rpcIndex];
+  const rpc = selectedNetwork.rpcStatus?.[rpcIndex];
   if (!rpc) return;
 
-  rpc.status = { isIdle: false, isLoading: true };
+  rpc.status = { isIdle: false, isLoading: true } as RpcStatus;
 
   await checkSingleRpc(rpc, selectedNetwork);
 }
@@ -407,12 +411,12 @@ async function testAllRpcs() {
   const selectedNetwork = state.selectedNetwork;
   if (!selectedNetwork) return;
 
-  for (const rpc of selectedNetwork.rpcStatus) {
-    rpc.status = { isIdle: false, isLoading: true };
+  for (const rpc of selectedNetwork.rpcStatus ?? []) {
+    rpc.status = { isIdle: false, isLoading: true } as RpcStatus;
   }
 
   await Promise.allSettled(
-    selectedNetwork.rpcStatus.map((rpc) => checkSingleRpc(rpc, selectedNetwork))
+    (selectedNetwork.rpcStatus ?? []).map((rpc) => checkSingleRpc(rpc, selectedNetwork))
   );
 }
 
@@ -420,7 +424,7 @@ async function testNodeLimit(rpcIndex: number) {
   const selectedNetwork = state.selectedNetwork;
   if (!selectedNetwork) return;
 
-  const rpc = selectedNetwork.rpcStatus[rpcIndex];
+  const rpc = selectedNetwork.rpcStatus?.[rpcIndex];
   if (!rpc) return;
 
   (rpc.status as RpcStatus).nodeLimit = "checking...";

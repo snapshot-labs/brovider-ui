@@ -41,10 +41,10 @@ const filteredNetworks = computed(() => {
 function onKeydown(event: KeyboardEvent) {
   if (
     event.key === "/" &&
-    !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)
+    !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName ?? "")
   ) {
     event.preventDefault();
-    document.querySelector('input[placeholder*="Search"]')?.focus();
+    (document.querySelector('input[placeholder*="Search"]') as HTMLElement)?.focus();
   }
 }
 
