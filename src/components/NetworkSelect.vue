@@ -1,70 +1,334 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useApp } from "../composables/useApp";
+
+const COLLAPSE_THRESHOLD = 140;
+
+const props = defineProps<{
+  sidebarWidth: number;
+}>();
+
+defineEmits<{
+  (e: "network-selected"): void;
+}>();
+
+const { app, toggleFavorite } = useApp();
+const search = ref("");
+
+const isCollapsed = computed(() => props.sidebarWidth < COLLAPSE_THRESHOLD);
+
+const filteredNetworks = computed(() => {
+  const networks = Object.values(app.value.networks);
+  let result = networks;
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase().trim();
+    result = result.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(q) ||
+        item.key?.toString().includes(q) ||
+        item.shortName?.toLowerCase().includes(q)
+    );
+  }
+  return result.sort((a: any, b: any) => {
+    const aFav = !!app.value.favoriteNetworks[a.key];
+    const bFav = !!app.value.favoriteNetworks[b.key];
+    if (aFav && !bFav) return -1;
+    if (!aFav && bFav) return 1;
+    return 0;
+  });
+});
+
+function onKeydown(event: KeyboardEvent) {
+  if (
+    event.key === "/" &&
+    !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName ?? "")
+  ) {
+    event.preventDefault();
+    (document.querySelector('input[placeholder*="Search"]') as HTMLElement)?.focus();
+  }
+}
+
+onMounted(() => window.addEventListener("keydown", onKeydown));
+onUnmounted(() => window.removeEventListener("keydown", onKeydown));
+</script>
+
 <template>
-  <div class="relative inline-block text-left w-60 shadow-md">
-    <div>
-      <div class="py-5 flex justify-center border-b">
-        <router-link to="/">
-          <img
-            class="inline w-6"
-            src="https://raw.githubusercontent.com/snapshot-labs/brand/master/icon/icon.svg"
-          />
-          <h2
-            class="inline text-xl tracking-tight font-semi-bold text-gray-900 ml-2 align-middle"
-          >
-            Networks
-          </h2>
-        </router-link>
-      </div>
-      <!-- <input
-        type="text"
-        placeholder="Search Network"
-        class="p-2 w-full border border-l-0 border-r-0"
-        @input="searchInput"
-      /> -->
-    </div>
-    <ul>
-      <li
-        class="relative"
-        v-for="(item, index) in Object.values(app.networks)"
-        :key="index"
+  <div
+    class="sticky top-0 h-screen w-full flex-shrink-0 flex flex-col bg-skin-bg border-r border-skin-border overflow-hidden"
+  >
+    <!-- Header -->
+    <div :class="['pt-5 pb-4', isCollapsed ? 'px-3' : 'px-5']">
+      <router-link
+        to="/"
+        class="flex items-center gap-3 group"
+        :class="{ 'justify-center': isCollapsed }"
+        @click="$emit('network-selected')"
       >
-        <router-link :to="item.key">
-          <div
-            :class="`flex hover:bg-purple-500 hover:text-white p-2 pl-2 border-b-2 ${
-              $route.params.id === item.key
-                ? ' bg-purple-700 text-white'
-                : 'text-gray-700'
-            }`"
+        <svg
+          class="w-8 h-8 text-skin-heading transition-transform duration-300 group-hover:scale-110 flex-shrink-0"
+          viewBox="0 0 300 300"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M200 300V100C255.228 100 300 144.772 300 200C300 255.228 255.228 300 200 300Z"
+          />
+          <path
+            d="M0 100C0 44.772 44.772 0 100 0V200C44.772 200 0 155.228 0 100Z"
+          />
+          <path d="M100 100H300V0H200C144.771 0 100 44.772 100 100Z" />
+          <path d="M200 200H0V300H100C155.229 300 200 255.228 200 200Z" />
+        </svg>
+        <div v-if="!isCollapsed">
+          <h2
+            class="text-lg font-semibold text-skin-heading tracking-tight leading-tight"
           >
-            <div>
+            Snapshot
+          </h2>
+          <span
+            class="text-[11px] font-medium text-skin-text uppercase tracking-widest"
+            >Networks</span
+          >
+        </div>
+      </router-link>
+    </div>
+
+    <!-- Search (hidden when collapsed) -->
+    <div v-if="!isCollapsed" class="px-4 pb-3">
+      <div class="relative">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-skin-text pointer-events-none"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        <input
+          type="text"
+          v-model="search"
+          placeholder="Search networks..."
+          class="w-full pl-10 pr-4 py-2.5 bg-skin-border border border-skin-border rounded-xl text-sm text-skin-heading placeholder-skin-text focus:outline-none focus:ring-1 focus:ring-skin-heading/30 focus:border-skin-text transition-all duration-200"
+        />
+        <kbd
+          v-if="!search"
+          class="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-skin-text bg-skin-bg-alt rounded border border-skin-border"
+          >/</kbd
+        >
+      </div>
+    </div>
+
+    <!-- Network count (hidden when collapsed) -->
+    <div v-if="!isCollapsed" class="px-5 pb-2">
+      <span
+        class="text-[11px] font-medium text-skin-text uppercase tracking-wider"
+      >
+        {{ filteredNetworks.length }} network{{
+          filteredNetworks.length !== 1 ? "s" : ""
+        }}
+      </span>
+    </div>
+
+    <!-- Network list -->
+    <nav
+      class="flex-1 overflow-y-auto pb-4"
+      :class="isCollapsed ? 'px-1.5' : 'px-3'"
+    >
+      <!-- Loading skeletons -->
+      <ul
+        v-if="app.isLoading"
+        :class="isCollapsed ? 'space-y-1' : 'space-y-0.5'"
+      >
+        <li
+          v-for="i in 12"
+          :key="'skeleton-' + i"
+          :class="isCollapsed ? 'px-0' : 'px-3 py-2.5'"
+        >
+          <div v-if="isCollapsed" class="flex items-center justify-center py-2">
+            <div class="shimmer-bar w-8 h-5 !rounded-lg"></div>
+          </div>
+          <div v-else class="flex items-center gap-2">
+            <div class="shimmer-bar w-10 h-5 !rounded-lg flex-shrink-0"></div>
+            <div class="shimmer-bar flex-1 h-5 !rounded-lg"></div>
+          </div>
+        </li>
+      </ul>
+      <ul v-else :class="isCollapsed ? 'space-y-1' : 'space-y-0.5'">
+        <li
+          v-for="(item, index) in filteredNetworks"
+          :key="index"
+          class="animate-fade-in"
+          :style="{
+            animationDelay: `${Math.min(index * 20, 300)}ms`,
+            animationFillMode: 'backwards',
+          }"
+        >
+          <router-link
+            :to="item.key"
+            class="block"
+            @click="$emit('network-selected')"
+          >
+            <!-- Collapsed view -->
+            <div
+              v-if="isCollapsed"
+              :class="[
+                'flex items-center justify-center py-2 rounded-xl transition-all duration-200 relative',
+                $route.params.id === item.key
+                  ? 'bg-skin-primary text-skin-accent-foreground'
+                  : 'text-skin-text hover:bg-white/[0.08]',
+              ]"
+              :title="item.name + ' (' + item.key + ')'"
+              v-tooltip.right="item.name + ' (' + item.key + ')'"
+            >
               <span
-                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                :class="[
+                  'network-chip text-[9px] !px-1.5 !py-0.5',
+                  $route.params.id === item.key
+                    ? '!bg-black/20 !text-skin-accent-foreground !border-black/20'
+                    : '',
+                ]"
               >
                 {{ item.key }}
               </span>
+              <span
+                v-if="app.networkHealthMap[item.key]"
+                :class="[
+                  'absolute top-1 right-1 w-2 h-2 rounded-full border border-skin-bg',
+                  app.networkHealthMap[item.key] === 'healthy' ? 'bg-skin-success' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'bg-yellow-500' : 'bg-skin-error',
+                ]"
+                :title="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+              v-tooltip.right="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                  app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+              ></span>
             </div>
+            <!-- Expanded view -->
             <div
-              class="px-2 py-1 text-sm"
-              role="menuitem"
-              tabindex="-1"
-              id="menu-item-0"
+              v-else
+              :class="[
+                'flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 group',
+                $route.params.id === item.key
+                  ? 'bg-skin-primary text-skin-accent-foreground'
+                  : 'text-skin-text hover:bg-white/[0.08]',
+              ]"
+              v-tooltip.right="item.name + ' (' + item.key + ')'"
             >
-              {{ item.name }}
+              <span
+                :class="[
+                  'network-chip min-w-[2.5rem] text-center text-[10px]',
+                  $route.params.id === item.key
+                    ? '!bg-black/20 !text-skin-accent-foreground !border-black/20'
+                    : 'group-hover:!bg-white/[0.08] group-hover:!border-white/[0.1]',
+                ]"
+              >
+                {{ item.key }}
+              </span>
+              <span
+                :class="[
+                  'flex-1 min-w-0 text-sm font-medium truncate',
+                  $route.params.id === item.key
+                    ? 'text-skin-accent-foreground'
+                    : 'text-skin-heading group-hover:text-skin-heading',
+                ]"
+                :title="item.name"
+              >
+                {{ item.name }}
+              </span>
+              <!-- Badges -->
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <!-- Favorite star -->
+                <button
+                  @click.prevent.stop="toggleFavorite(item.key)"
+                  :class="[
+                    'p-0.5 rounded transition-colors',
+                    app.favoriteNetworks[item.key]
+                      ? 'text-yellow-400'
+                      : 'text-transparent group-hover:text-skin-text/30 hover:!text-yellow-400',
+                  ]"
+                  :title="app.favoriteNetworks[item.key] ? 'Remove from favorites' : 'Add to favorites'"
+                >
+                  <svg class="w-3 h-3" :fill="app.favoriteNetworks[item.key] ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+                <!-- Premium badge -->
+                <span
+                  v-if="
+                    app.areSnapshotNetworksLoaded &&
+                    app.snapshotNetworks[item.key]?.premium
+                  "
+                  class="w-4 h-4 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-[9px] font-bold"
+                  title="Premium Network"
+                  >P</span
+                >
+                <!-- Testnet badge -->
+                <span
+                  v-if="item.testnet"
+                  :class="[
+                    'text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded-full leading-none',
+                    $route.params.id === item.key
+                      ? 'bg-blue-500/30 text-blue-200'
+                      : 'bg-blue-500/15 text-blue-400',
+                  ]"
+                  title="Testnet Network"
+                  >T</span
+                >
+                <!-- Invalid badge -->
+                <span
+                  v-if="
+                    app.areSnapshotNetworksLoaded &&
+                    !app.snapshotNetworks[item.key]
+                  "
+                  :class="[
+                    'text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded-full leading-none',
+                    $route.params.id === item.key
+                      ? 'bg-red-500/30 text-red-200'
+                      : 'bg-skin-error/15 text-skin-error',
+                  ]"
+                  title="Not found on Snapshot Hub API"
+                  >!</span
+                >
+                <!-- Health dot -->
+                <span
+                  v-if="app.networkHealthMap[item.key]"
+                  :class="[
+                    'w-2 h-2 rounded-full flex-shrink-0',
+                    app.networkHealthMap[item.key] === 'healthy' ? 'bg-skin-success' :
+                    app.networkHealthMap[item.key] === 'degraded' ? 'bg-yellow-500' : 'bg-skin-error',
+                  ]"
+                  :title="app.networkHealthMap[item.key] === 'healthy' ? 'Snapshot RPC healthy' :
+                    app.networkHealthMap[item.key] === 'degraded' ? 'Snapshot RPC degraded' : 'Snapshot RPC down'"
+                ></span>
+              </div>
             </div>
-          </div>
-        </router-link>
-      </li>
-    </ul>
+          </router-link>
+        </li>
+      </ul>
+      <div
+        v-if="!app.isLoading && !isCollapsed && filteredNetworks.length === 0"
+        class="flex flex-col items-center justify-center py-12 text-skin-text"
+      >
+        <svg
+          class="w-10 h-10 mb-3 opacity-40"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        <p class="text-sm">No networks found</p>
+      </div>
+    </nav>
   </div>
 </template>
-
-<script setup>
-import { ref } from "vue";
-import { useApp } from "../composables/useApp";
-const { app } = useApp();
-// const search = ref("");
-
-// const searchInput = (e) => {
-//   const input = e.target.value;
-//   search.value = input;
-// };
-</script>

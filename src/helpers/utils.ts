@@ -22,8 +22,8 @@ export async function multicall(
       options || {}
     );
     return res.map((call, i) => itf.decodeFunctionResult(calls[i][1], call));
-  } catch (e) {
-    return Promise.reject(e);
+  } catch (error) {
+    return Promise.reject(error);
   }
 }
 

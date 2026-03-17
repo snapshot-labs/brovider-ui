@@ -2,3 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-skin-bg text-skin-text antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-skin-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-skin-text;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* floating-vue tooltip theme overrides */
+.v-popper--theme-tooltip .v-popper__inner {
+  @apply bg-skin-bg-alt text-skin-heading text-xs font-medium px-2.5 py-1.5 rounded-lg border border-skin-border shadow-lg;
+}
+.v-popper--theme-tooltip .v-popper__arrow-outer,
+.v-popper--theme-tooltip .v-popper__arrow-inner {
+  border-color: rgb(28, 27, 32);
+}
+
+@layer components {
+  .glass-panel {
+    background-color: rgba(28, 27, 32, 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(43, 42, 47, 0.6);
+    @apply rounded-2xl;
+  }
+  .glass-panel-solid {
+    @apply bg-skin-bg-alt border border-skin-border rounded-2xl;
+  }
+  .btn-primary {
+    @apply px-4 py-2 bg-skin-primary font-medium rounded-xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-skin-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-skin-bg;
+    color: rgb(17, 17, 17);
+  }
+  .btn-primary:hover {
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+  .btn-secondary {
+    @apply px-4 py-2 bg-skin-bg-alt border border-skin-border font-medium rounded-xl transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-skin-border focus-visible:ring-offset-2 focus-visible:ring-offset-skin-bg;
+    color: rgb(255, 255, 255);
+  }
+  .btn-secondary:hover {
+    background-color: rgba(43, 42, 47, 0.7);
+  }
+  .btn-secondary:active {
+    transform: scale(0.97);
+  }
+  .network-chip {
+    @apply px-2 text-xs font-semibold rounded-lg tabular-nums;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    color: rgba(160, 159, 164);
+    background-color: rgba(43, 42, 47, 0.6);
+    border: 1px solid rgba(43, 42, 47, 0.8);
+  }
+  .shimmer-bar {
+    @apply h-5 rounded-lg animate-shimmer;
+    background: linear-gradient(90deg,
+      rgba(43, 42, 47, 0.4) 0%,
+      rgba(43, 42, 47, 0.9) 50%,
+      rgba(43, 42, 47, 0.4) 100%
+    );
+    background-size: 200% 100%;
+  }
+}
