@@ -51,6 +51,23 @@ type NetworkConfig = {
   snapshotRpcStatus?: RpcEntry;
 };
 
+const state = reactive({
+  selectedNetwork: null as NetworkConfig | null,
+  isEditingNetwork: false,
+  editNetworkType: "",
+  error: false as boolean | string,
+  newNetworkObject: "",
+  networks: {} as Record<string, any>,
+  isLoading: true,
+  snapshotNetworks: {} as Record<string, SnapshotNetwork>,
+  areSnapshotNetworksLoaded: false,
+  networkHealthMap: {} as Record<string, "healthy" | "degraded" | "down">,
+  favoriteNetworks: JSON.parse(localStorage.getItem('brovider-favorites') || '{}') as Record<string, boolean>,
+  latencyHistory: {} as Record<string, Record<string, number[]>>,
+  chainlistCache: null as any[] | null,
+  isChainlistLoading: false,
+});
+
 let chainlistFetchPromise: Promise<any[]> | null = null;
 
 function fetchChainlist(): Promise<any[]> {
@@ -71,23 +88,6 @@ function fetchChainlist(): Promise<any[]> {
 
   return chainlistFetchPromise;
 }
-
-const state = reactive({
-  selectedNetwork: null as NetworkConfig | null,
-  isEditingNetwork: false,
-  editNetworkType: "",
-  error: false as boolean | string,
-  newNetworkObject: "",
-  networks: {} as Record<string, any>,
-  isLoading: true,
-  snapshotNetworks: {} as Record<string, SnapshotNetwork>,
-  areSnapshotNetworksLoaded: false,
-  networkHealthMap: {} as Record<string, "healthy" | "degraded" | "down">,
-  favoriteNetworks: JSON.parse(localStorage.getItem('brovider-favorites') || '{}') as Record<string, boolean>,
-  latencyHistory: {} as Record<string, Record<string, number[]>>,
-  chainlistCache: null as any[] | null,
-  isChainlistLoading: false,
-});
 
 function editNetworkButtonClick() {
   if (!state.selectedNetwork) return;
