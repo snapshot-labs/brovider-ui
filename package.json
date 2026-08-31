@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint": "eslint ./src --fix"
+    "lint": "eslint ./src",
+    "lint:fix": "bun run lint --fix"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.8.0",

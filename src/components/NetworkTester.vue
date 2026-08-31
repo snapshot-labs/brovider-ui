@@ -31,6 +31,8 @@ const {
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
+const addRpcInput = ref(false);
+const newRpcUrl = ref('');
 
 const snapshotInfo = computed(() => {
   const key = app.value.selectedNetwork?.key;
@@ -173,8 +175,6 @@ router.afterEach(async (to, from) => {
 
 const isShowingShortcuts = ref(false);
 const isExportDropdownOpen = ref(false);
-const addRpcInput = ref(false);
-const newRpcUrl = ref('');
 
 const isFavorited = computed(() => {
   const key = app.value.selectedNetwork?.key;
